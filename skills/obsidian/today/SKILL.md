@@ -1,5 +1,5 @@
 ---
-name: today
+name: obsidian-today
 description: Obsidian vault skill. Generate a daily plan grounded in what's actually happening across vault, calendar, and tasks
 ---
 

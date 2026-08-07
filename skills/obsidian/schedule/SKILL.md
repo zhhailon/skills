@@ -1,5 +1,5 @@
 ---
-name: schedule
+name: obsidian-schedule
 description: Obsidian vault skill. Schedule events by reading your priorities, commitments, and energy patterns from the vault
 ---
 

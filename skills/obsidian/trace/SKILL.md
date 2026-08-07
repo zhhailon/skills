@@ -1,5 +1,5 @@
 ---
-name: trace
+name: obsidian-trace
 description: Trace how an idea or concept has evolved across the Obsidian vault over time
 ---
 

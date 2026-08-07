@@ -1,5 +1,5 @@
 ---
-name: backlinks
+name: obsidian-backlinks
 description: Obsidian vault skill. Find notes that should be linked but aren't and wire new connections across the vault
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: learned
+name: obsidian-learned
 description: Obsidian vault skill. Generate three levels of writing (short post, personal essay, universal essay) from vault thinking on a topic
 ---
 

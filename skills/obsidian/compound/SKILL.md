@@ -1,5 +1,5 @@
 ---
-name: compound
+name: obsidian-compound
 description: Obsidian vault skill. Ask the same question at different points in time across the vault to show how context compounds
 ---
 

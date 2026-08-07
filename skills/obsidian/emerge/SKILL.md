@@ -1,5 +1,5 @@
 ---
-name: emerge
+name: obsidian-emerge
 description: Obsidian vault skill. Surface ideas the vault implies but never explicitly states
 ---
 

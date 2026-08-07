@@ -1,5 +1,5 @@
 ---
-name: guests
+name: obsidian-guests
 description: Obsidian vault skill. Derive who you should be talking to on the show by starting from questions the vault is actively asking
 ---
 

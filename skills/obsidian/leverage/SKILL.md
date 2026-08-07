@@ -1,5 +1,5 @@
 ---
-name: leverage
+name: obsidian-leverage
 description: Obsidian vault skill. Scan the vault to find skills or mental models where concentrated investment would produce disproportionate breakthroughs
 ---
 

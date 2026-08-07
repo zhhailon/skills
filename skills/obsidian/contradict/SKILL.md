@@ -1,5 +1,5 @@
 ---
-name: contradict
+name: obsidian-contradict
 description: Obsidian vault skill. Find incompatible beliefs currently held simultaneously in the vault
 ---
 

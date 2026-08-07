@@ -1,5 +1,5 @@
 ---
-name: challenge
+name: obsidian-challenge
 description: Obsidian vault skill. Pressure-test current beliefs using the vault's own history
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: weekly-learnings
+name: obsidian-weekly-learnings
 description: Obsidian vault skill. Compile the week's insights from daily notes into a single writing-ready summary
 ---
 

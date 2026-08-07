@@ -1,5 +1,5 @@
 ---
-name: ideas
+name: obsidian-ideas
 description: Obsidian vault skill. Generate ideas across multiple domains from vault patterns to fuel exploration and break through bottlenecks
 ---
 

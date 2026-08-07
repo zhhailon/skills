@@ -1,5 +1,5 @@
 ---
-name: ghost
+name: obsidian-ghost
 description: Obsidian vault skill. Answer a question as the vault's author, then evaluate how faithful the answer is
 ---
 

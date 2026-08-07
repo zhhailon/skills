@@ -1,5 +1,5 @@
 ---
-name: close-day
+name: obsidian-close-day
 description: Obsidian vault skill. Review what happened today, capture what you learned, and flag anything unresolved for tomorrow
 ---
 

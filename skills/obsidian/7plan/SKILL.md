@@ -1,5 +1,5 @@
 ---
-name: 7plan
+name: obsidian-7plan
 description: Obsidian vault skill. Look at what's most alive in your thinking right now and reshape the next 7 days around it
 ---
 

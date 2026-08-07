@@ -1,5 +1,5 @@
 ---
-name: graduate
+name: obsidian-graduate
 description: Obsidian vault skill. Extract ideas buried in daily notes and promote them into standalone permanent notes
 ---
 

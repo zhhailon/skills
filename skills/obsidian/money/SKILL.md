@@ -1,5 +1,5 @@
 ---
-name: money
+name: obsidian-money
 description: Obsidian vault skill. Revenue advisor — diagnose the revenue system and surface opportunities beyond the vault
 ---
 

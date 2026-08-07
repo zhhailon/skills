@@ -1,5 +1,5 @@
 ---
-name: stranger
+name: obsidian-stranger
 description: Obsidian vault skill. Read the entire vault and write a portrait of you as if from someone who's never met you
 ---
 

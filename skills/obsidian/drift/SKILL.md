@@ -1,5 +1,5 @@
 ---
-name: drift
+name: obsidian-drift
 description: Obsidian vault skill. Compare stated intentions against actual behavior; surface what's being avoided
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: make
+name: obsidian-make
 description: Obsidian vault skill. Surface vault ideas that have accumulated enough depth to become real work
 ---
 

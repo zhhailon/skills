@@ -1,5 +1,5 @@
 ---
-name: context
+name: obsidian-context
 description: Obsidian vault skill. Load comprehensive context about the user and vault before beginning work
 ---
 

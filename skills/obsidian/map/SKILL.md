@@ -1,5 +1,5 @@
 ---
-name: map
+name: obsidian-map
 description: Obsidian vault skill. Generate a topological view of the vault showing clusters, themes, and how ideas relate
 ---
 

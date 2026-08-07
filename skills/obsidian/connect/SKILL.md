@@ -1,5 +1,5 @@
 ---
-name: connect
+name: obsidian-connect
 description: Obsidian vault skill. Find unexpected bridges between two domains, projects, or topics in the vault
 ---
 
