@@ -32,7 +32,7 @@ Do not copy the surface schema of a finance product. Combine these proven ideas:
 - import IDs/hashes and reconciliation state for auditability;
 - budgets, subscriptions, tags, and goals as optional layers over the ledger.
 
-Use [schema.sql](schema.sql) for exact SQLite types, constraints, indexes, and triggers.
+Use [schema.sql](schema.sql) for exact SQLite types, constraints, indexes, and triggers. It carries only the tables the ingest, posting, and audit path needs. Optional subsystems — tags, budgets, savings goals, recurring rules, reconciliation sessions, receipt line items, account ownership, encrypted counterparty identifiers — live in [schema-extensions.sql](schema-extensions.sql) and are applied separately.
 
 ## 2. Core Accounting Model
 
@@ -197,7 +197,7 @@ Generate this export from the account register and related tables only when requ
 
 ## 6. Import and Validation Pipeline
 
-Use the bundled `scripts/finance_stage.py` and the LLM extraction contract. Process exactly one source file at a time:
+Use the bundled `scripts/finance.py` (`stage` then `load`) and the LLM extraction contract. Process exactly one source file at a time:
 
 1. Hash and store the immutable original in `source_files`.
 2. Use the available LLM in a fresh context to review every page and extract only allowed transaction fields.
@@ -215,7 +215,7 @@ The private owner may give the complete current source file to the active privat
 
 Protect three boundaries separately:
 
-- **Operational:** restrict filesystem and database access; use encrypted storage or SQLCipher where appropriate.
+- **Operational:** restrict filesystem and database access; use encrypted storage or an encrypted-database extension where appropriate.
 - **Field:** encrypt full identifiers; store a masked suffix and keyed hash for matching.
 - **External:** treat shared channels, exports, logs, and third-party APIs as outside the trusted deployment. Send financial data outside it only with explicit approval.
 

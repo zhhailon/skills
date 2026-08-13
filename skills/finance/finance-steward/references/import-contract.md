@@ -9,7 +9,7 @@ Write one JSON object:
 ```json
 {
   "schema_version": "finance-steward-llm-extraction-v1",
-  "model": "openclaw-auto",
+  "model": "identifier the runtime reports for the model that ran this pass",
   "run_id": "fresh-unique-run-id",
   "source_sha256": "hex digest of the original file",
   "total_pages": 3,
