@@ -25,10 +25,13 @@ namespace survives install even though the folder doesn't.
 ## Runtime requirements
 
 - Obsidian skills require the `obsidian` CLI on `PATH`.
-- `finance-steward` uses the active LLM for extraction and runs its
-  standard-library reconciliation/staging script with `uv run python`;
-  install [`uv`](https://docs.astral.sh/uv/) on the agent runtime's `PATH`.
+- `finance-steward` uses whatever LLM the runtime already provides for
+  extraction — it names no model or provider. Its `scripts/finance.py`
+  (`stage` and `load` subcommands) imports only the standard library, so it
+  needs Python 3.9+ on `PATH` and no package manager, virtual environment, or
+  installed dependency. The ledger it writes needs SQLite 3.37+, because the
+  schema uses `STRICT` tables.
 
-`finance-steward` is self-contained under
-`skills/finance/finance-steward/`, so an agent such as OpenClaw can sync that
-directory directly into its workspace `skills/finance-steward/` directory.
+`finance-steward` is self-contained under `skills/finance/finance-steward/`,
+so any agent runtime can sync that directory directly into its workspace
+`skills/finance-steward/` directory.
