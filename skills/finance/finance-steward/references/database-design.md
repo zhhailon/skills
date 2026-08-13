@@ -21,7 +21,7 @@ Use a local relational database as the source of truth for household cash flow, 
 - multiple household members, institutions, accounts, and currencies;
 - LLM-first imports with deterministic staging, source provenance, and reconciliation;
 - idempotency, reconciliation, and immutable posted history;
-- useful human views without leaking sensitive identifiers to models;
+- useful human and private-model views with explicit read/write boundaries;
 - SQLite operation today and a clean path to PostgreSQL later.
 
 Do not copy the surface schema of a finance product. Combine these proven ideas:
@@ -125,7 +125,7 @@ counterparty = Chipotle
 category account = Expense:Food:Dining
 ```
 
-Normalize noisy bank descriptions through `counterparty_aliases`. Store bank-account/IBAN/card identifiers only in `counterparty_identifiers`, using ciphertext plus a keyed lookup hash and masked suffix. Never put full identifiers in descriptions, notes, tags, or model prompts.
+Normalize noisy bank descriptions through `counterparty_aliases`. Store bank-account/IBAN/card identifiers only in `counterparty_identifiers`, using ciphertext plus a keyed lookup hash and masked suffix. Keep full identifiers out of descriptions, notes, and tags because they have dedicated fields; the private model may inspect them when the task requires it.
 
 ### Transactions and Postings
 
@@ -141,7 +141,7 @@ Use:
 - `import_batches` for one execution or uploaded archive;
 - `import_records` for one extracted transaction candidate from any source format;
 - `transaction_sources` for many-to-many provenance;
-- `validation_runs` for parser/model agreement without retaining model-visible sensitive text;
+- `validation_runs` for extraction/reconciliation evidence without duplicating raw source text;
 - `audit_events` for append-only mutation evidence;
 - `balance_snapshots` for statement opening/closing or after-transaction balances.
 
@@ -203,24 +203,23 @@ Use the bundled `scripts/finance_stage.py` and the LLM extraction contract. Proc
 2. Use the available LLM in a fresh context to review every page and extract only allowed transaction fields.
 3. Repeat from the source in another fresh context. The same model is acceptable; label it `same_model_fresh_context` rather than model-independent verification.
 4. Reconcile both transaction multisets with the bundled script and stop on missing, extra, uncertain, or duplicate records.
-5. Stage normalized dates, integer amounts, sanitized descriptions, page locators, hashes, and dedupe keys locally without writing ledger entries.
+5. Stage normalized dates, integer amounts, transaction descriptions, page locators, hashes, and dedupe keys locally without writing ledger entries.
 6. Store model identities, run mode, source and extraction hashes, counts, status, and differences in `validation_runs`.
 7. Create draft transactions and postings only after staging and validation succeed.
 8. Post only after balance, duplicate, count, total, and validation checks pass.
 9. Link every posted transaction back to its source record.
 
-The private owner may give the current source file to the active model for extraction. Keep model output transaction-only; never persist balances, account owner data, account identifiers, addresses, source paths, or unrelated raw text in extraction JSON.
+The private owner may give the complete current source file to the active private model. Keep extraction JSON transaction-focused because durable account metadata, balances, identifiers, and source paths belong in their normalized database tables, not because they must be hidden from that model.
 
 ## 7. Privacy Boundary
 
-Protect four layers separately:
+Protect three boundaries separately:
 
 - **Operational:** restrict filesystem and database access; use encrypted storage or SQLCipher where appropriate.
 - **Field:** encrypt full identifiers; store a masked suffix and keyed hash for matching.
-- **Conversational:** expose only requested aggregates or masked register fields.
-- **Model:** use an allowlist, not a denylist. The validator receives only date, description, amount, and currency.
+- **External:** treat shared channels, exports, logs, and third-party APIs as outside the trusted deployment. Send financial data outside it only with explicit approval.
 
-Provide model-safe database views that expose an explicitly sanitized description and exclude all identifier, ciphertext, path, raw payload, balance, member, account, counterparty, and institution fields. Never grant a model unrestricted SQL access to the base tables.
+The private model may read base tables and sensitive fields when the task requires them. Prefer task-scoped views for context efficiency and stable semantics. Separate read and write capabilities to protect ledger integrity; unrestricted writes remain unsafe even when the model is private.
 
 ## 8. Budgeting and Planning
 
@@ -260,6 +259,6 @@ For each batch, verify:
 - every posted transaction has at least two postings and balances to zero;
 - opening/closing balances and reconciliation differences;
 - parser/model validation status;
-- no sensitive identifier appears in model-safe views or logs.
+- no sensitive identifier appears unintentionally in operational logs or external exports.
 
 Keep the old ledger read-only until totals and representative transaction histories match and the owner explicitly approves cutover.

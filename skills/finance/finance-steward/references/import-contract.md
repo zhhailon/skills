@@ -34,9 +34,9 @@ Write one JSON object:
 
 Only the listed keys are allowed. Use ISO dates and signed integer minor units. Positive values increase the selected account's signed balance; negative values decrease it. For a credit-card account, purchases are negative and payments or credits are positive.
 
-`reviewed_pages` must equal every page from 1 through `total_pages`, in order. Count transaction rows, including identical legitimate purchases, not unique descriptions. Put concise transaction-specific ambiguity codes in `uncertainties`; never copy private statement text there.
+`reviewed_pages` must equal every page from 1 through `total_pages`, in order. Count transaction rows, including identical legitimate purchases, not unique descriptions. Put concise transaction-specific ambiguity codes in `uncertainties`.
 
-The transaction schema deliberately has no balance, account, routing, person, address, or raw-text field. Sanitize long identifiers in descriptions as `[masked-id]` before writing JSON.
+The transaction schema deliberately has no balance, account, routing, person, address, or raw-text field because those values do not describe a transaction candidate. The private model may read them from the source. Preserve the transaction description needed for reconciliation; do not redact it solely because the model can see it.
 
 ## Reconciliation
 

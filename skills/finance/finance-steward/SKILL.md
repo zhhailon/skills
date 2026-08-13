@@ -7,14 +7,15 @@ description: Ingest, reconcile, organize, query, and analyze private household f
 
 Process one private financial file at a time. Use the available LLM to identify transactions; do not infer PDF layouts with regular expressions or statement profiles.
 
-## Guard Privacy
+## Use the Private-Model Trust Boundary
 
-- Work only in a direct private conversation with the owner.
-- Keep sources and staging files in private persistent storage.
-- Send the model only the current file or current page. Keep batches out of one context.
-- Emit only transaction date, posted date when present, sanitized description, signed amount in minor units, currency, source page, source index, and status.
-- Exclude account and routing numbers, balances, addresses, names, limits, interest, rewards identifiers, login data, and unrelated text from extraction JSON and conversation output.
-- Report routine progress as counts and status. Do not list merchants or amounts unless resolving a specific mismatch with the owner.
+- Treat the configured default model as a private deployment controlled by the owner. It may read the complete current statement, including account metadata, balances, and identity fields; sending the source to it is inside the trusted boundary.
+- Keep sources, model artifacts, staging files, and the ledger in private persistent storage.
+- Give the model one file at a time to control context, not to redact the file. Split by page only when the runtime cannot consume the document directly.
+- Keep extraction JSON transaction-focused because it is a stable interchange schema. This is data modeling, not protection from the private model.
+- Preserve transaction descriptions needed for reconciliation; do not mask identifiers merely because a model reads them.
+- Keep routine Telegram progress concise. Show full sensitive fields only when the owner asks or when resolving a specific discrepancy.
+- Treat external APIs, shared channels, logs, and exports as outside the private-model boundary. Require explicit approval before sending financial data to them.
 
 ## Extract with the Available LLM
 
@@ -46,7 +47,7 @@ uv run python <skill-dir>/scripts/finance_stage.py /private/source.pdf \
 
 The script does not parse documents or call a model. It only:
 
-- rejects forbidden fields and malformed transaction records;
+- rejects fields outside the extraction schema and malformed transaction records;
 - requires complete page coverage and distinct run IDs;
 - compares both extractions as multisets;
 - creates record hashes, dedupe keys, JSONL, and a manifest.
@@ -55,7 +56,7 @@ Accept `status=staged`. Stop on `needs_review` or `failed`. A mismatch means the
 
 ## Control Batch Context
 
-For an archive, enumerate members locally without exposing names or contents. Extract one supported file, finish both LLM passes and reconciliation, then begin the next file with a fresh session. Keep each file's source, two extraction JSON files, staging JSONL, and manifest together.
+For an archive, enumerate members locally. Extract one supported file, finish both LLM passes and reconciliation, then begin the next file with a fresh session. Keep each file's source, two extraction JSON files, staging JSONL, and manifest together.
 
 Use this progress format:
 

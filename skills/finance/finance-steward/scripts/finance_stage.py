@@ -30,7 +30,7 @@ ALLOWED_TRANSACTION_FIELDS = {
 
 
 class StageFailure(Exception):
-    """A privacy-safe staging failure."""
+    """A staging failure safe to report without dumping source contents."""
 
 
 def safe_json(value: dict[str, Any]) -> None:
@@ -51,8 +51,7 @@ def sha256_file(path: Path) -> str:
 
 def normalize_text(value: Any) -> str:
     text = unicodedata.normalize("NFKC", str(value or ""))
-    text = re.sub(r"\s+", " ", text).strip()
-    return re.sub(r"(?<!\d)\d(?:[ -]?\d){5,}(?!\d)", "[masked-id]", text)
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def canonical_description(value: str) -> str:
@@ -74,7 +73,7 @@ def load_object(path: Path, label: str) -> dict[str, Any]:
 def validate_extraction(value: dict[str, Any], source_sha256: str, label: str) -> list[dict[str, Any]]:
     unknown = set(value) - ALLOWED_ROOT_FIELDS
     if unknown:
-        raise StageFailure(f"{label} contains forbidden root fields")
+        raise StageFailure(f"{label} contains fields outside the extraction schema")
     if value.get("schema_version") != EXTRACTION_SCHEMA:
         raise StageFailure(f"{label} schema version is unsupported")
     if not normalize_text(value.get("model")) or not normalize_text(value.get("run_id")):
@@ -100,7 +99,7 @@ def validate_extraction(value: dict[str, Any], source_sha256: str, label: str) -
     normalized: list[dict[str, Any]] = []
     for index, transaction in enumerate(transactions, start=1):
         if not isinstance(transaction, dict) or set(transaction) - ALLOWED_TRANSACTION_FIELDS:
-            raise StageFailure(f"{label} transaction {index} contains forbidden fields")
+            raise StageFailure(f"{label} transaction {index} contains fields outside the extraction schema")
         date = transaction.get("transaction_date")
         try:
             dt.date.fromisoformat(date)

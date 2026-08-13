@@ -61,7 +61,7 @@ class FinanceStageTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(manifest["verification_mode"], "same_model_fresh_context")
         record = json.loads((self.root / "staging.jsonl").read_text())
-        self.assertEqual(record["description"], "CAFE [masked-id]")
+        self.assertEqual(record["description"], "CAFE 123456789")
 
     def test_different_results_need_review(self) -> None:
         code, manifest = self.run_stage(self.extraction("run-a"), self.extraction("run-b", amount=-999))
@@ -69,7 +69,7 @@ class FinanceStageTests(unittest.TestCase):
         self.assertEqual(manifest["status"], "needs_review")
         self.assertEqual(manifest["reconciliation"]["missing_count"], 1)
 
-    def test_forbidden_fields_fail(self) -> None:
+    def test_out_of_schema_fields_fail(self) -> None:
         first = self.extraction("run-a")
         first["transactions"][0]["balance"] = "private"
         with self.assertRaises(fs.StageFailure):
