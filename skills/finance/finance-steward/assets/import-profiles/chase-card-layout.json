@@ -1,6 +1,0 @@
-{
-  "name": "chase-card-layout-example-v1",
-  "currency": "USD",
-  "sign_mode": "invert",
-  "line_pattern": "^\\s*(?P<date>\\d{1,2}/\\d{1,2})\\s+(?P<description>.+?)\\s+\\$?(?P<amount>-?[0-9,]+\\.\\d{2})\\s*$"
-}

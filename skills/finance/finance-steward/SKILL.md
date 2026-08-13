@@ -1,114 +1,80 @@
 ---
 name: finance-steward
-description: Independently ingest, validate, organize, query, and analyze private household financial records across agents. Use for downloaded bank or credit-card statements, CSV/TSV/XLSX transaction exports, OFX/QFX/QBO/QIF files, text-layer PDFs, receipts, spending summaries, reconciliation, categorization, and duplicate-safe batches. Use the bundled standard-library importer and portable staging contract; require no OpenClaw command, external finance service, workspace tool, database path, LLM provider, or network API.
+description: Ingest, reconcile, organize, query, and analyze private household financial records across agents. Use for bank or credit-card statements, transaction exports, receipts, spending summaries, reconciliation, categorization, duplicate-safe batches, and ledger design. Use the currently available LLM for document extraction; require no named model, provider, finance service, or bank integration.
 ---
 
 # Finance Steward
 
-Operate private financial records without exposing unrelated account data or flooding conversation context. Prefer deterministic extraction. Treat model review as an optional second pass over sanitized staging fields, never as an importer dependency.
+Process one private financial file at a time. Use the available LLM to identify transactions; do not infer PDF layouts with regular expressions or statement profiles.
 
-## Use the Canonical Data Model
+## Guard Privacy
 
-Read [references/database-design.md](references/database-design.md) before creating or changing a ledger schema, importing a new source format, migrating legacy transaction data, or designing a finance report. Use [references/schema.sql](references/schema.sql) as the canonical SQLite DDL for a new ledger.
+- Work only in a direct private conversation with the owner.
+- Keep sources and staging files in private persistent storage.
+- Send the model only the current file or current page. Keep batches out of one context.
+- Emit only transaction date, posted date when present, sanitized description, signed amount in minor units, currency, source page, source index, and status.
+- Exclude account and routing numbers, balances, addresses, names, limits, interest, rewards identifiers, login data, and unrelated text from extraction JSON and conversation output.
+- Report routine progress as counts and status. Do not list merchants or amounts unless resolving a specific mismatch with the owner.
 
-Treat the nine-column bank-flow layout as a presentation view, not the storage schema. Store authoritative values in the double-entry journal, derive income, expense, and running balance, and keep counterparty identity separate from accounting category. Do not deploy or depend on Actual Budget, Firefly III, or another finance service.
+## Extract with the Available LLM
 
-## Use the Bundled Importer
+Read [references/import-contract.md](references/import-contract.md) before importing files or interpreting a mismatch.
 
-Resolve paths relative to this `SKILL.md`. Run `scripts/finance_import.py` with `uv run python`; do not search for or install a workspace-specific finance command. Read [references/import-contract.md](references/import-contract.md) before importing a new file format, creating a profile, interpreting a warning, or loading staging records into a ledger.
+For each file:
 
-Keep the importer usable with the Python standard library and no network access. Keep its JSONL staging output separate from any database implementation so another agent can reproduce and inspect the import.
+1. Start a fresh isolated session. In Telegram/OpenClaw, use `/new` or a unique session ID.
+2. Give the current file to the available model. Do not require Qwen, Kimi, or any second provider; `openclaw-auto` is sufficient.
+3. Review every page exactly once and write the first extraction JSON defined by the import contract.
+4. Start another fresh session using the available model. Give it the source file, not the first result, and write a second extraction JSON using the same schema.
+5. Run `scripts/finance_stage.py` to reconcile and stage both results.
 
-## Enforce Privacy Boundaries
+The second pass is a fresh-context reconciliation. When both passes use the same model, record `same_model_fresh_context`; treat it as useful error detection, not model-independent confirmation. If the environment happens to route the passes to different models, the script records `cross_model`. Model diversity is optional.
 
-- Process financial records only in a direct, private conversation with the owner. Refuse to inspect, summarize, search, or quote them in a group or shared channel.
-- Keep originals, extracted files, and the ledger in the configured local persistent finance directory.
-- Never place a full PDF, statement, CSV, ZIP, or OCR dump in the conversation or model prompt.
-- Expose only transaction fields needed for validation: date, merchant or description, amount, and currency when needed.
-- Never expose account or routing numbers, statement addresses, legal names, login data, balances, limits, interest details, rewards identifiers, or unrelated statement text to a model or conversational output.
-- Never print secrets or credentials. Refer to configured environment variables or secret stores by name only.
-- Query an LLM-safe view or explicitly select sanitized fields; never expose identifier ciphertext, account numbers, raw payload paths, balances, or source documents to a model.
-- Ask for explicit confirmation before connecting an external account or performing transfers, payments, trades, orders, or account-setting changes. Treat read-only local imports and ledger queries as separate from those actions.
+Use native document input when available. If the runtime cannot read a PDF directly, render or extract one page locally and send pages sequentially within that file's isolated session. Preserve page numbers. Never use a row regex or statement profile to decide what counts as a transaction.
 
-## Import Files
+## Reconcile and Stage
 
-Work on exactly one source file at a time. For an archive, enumerate members locally, extract one supported file into private storage, finish its staging and review, then continue. Use a fresh isolated session or turn per file when available.
-
-Inspect without exposing transaction contents:
-
-```bash
-uv run python <skill-dir>/scripts/finance_import.py inspect "/path/to/download"
-```
-
-Stage CSV, TSV, XLSX, OFX, QFX, QBO, or QIF using automatic detection:
+Run the bundled standard-library script with `uv`:
 
 ```bash
-uv run python <skill-dir>/scripts/finance_import.py stage "/path/to/download" \
-  --account-key "stable-local-account-key" \
-  --output "/private/staging/download.jsonl"
+uv run python <skill-dir>/scripts/finance_stage.py /private/source.pdf \
+  --extraction /private/first.json \
+  --verification /private/second.json \
+  --account-key stable-local-account-key \
+  --output /private/staging/source.jsonl
 ```
 
-Use a reviewed JSON profile for PDF or extracted statement text. Supply the verified closing date when rows omit a year:
+The script does not parse documents or call a model. It only:
 
-```bash
-uv run python <skill-dir>/scripts/finance_import.py stage "/path/to/statement.pdf" \
-  --profile <skill-dir>/assets/import-profiles/chase-card-layout.json \
-  --statement-end 2026-08-04 \
-  --account-key "stable-local-account-key" \
-  --output "/private/staging/statement.jsonl"
-```
+- rejects forbidden fields and malformed transaction records;
+- requires complete page coverage and distinct run IDs;
+- compares both extractions as multisets;
+- creates record hashes, dedupe keys, JSONL, and a manifest.
 
-Use `--sign-mode invert` or a profile sign mode when a credit-card export reports purchases as positive numbers. Verify the sign with a known purchase and payment before acceptance.
-
-Treat bundled bank profiles as examples tied to a layout, not universal institution guarantees. If a file has unfamiliar headers or statement rows, create a local JSON profile using the import contract. Keep personal values out of the profile; include only column labels, regular expressions, date formats, currency, and sign rules.
-
-Return `failed` for binary XLS, encrypted PDFs, scanned image-only PDFs, undecodable custom-font PDFs, and unmatched layouts. Preserve the source and request a different bank export such as CSV, OFX, QFX, QBO, or QIF. Never infer transactions from an unreliable extraction.
-
-## Validate Before Accepting Transactions
-
-Run the bundled validator on every staging file:
-
-```bash
-uv run python <skill-dir>/scripts/finance_import.py validate "/private/staging/download.jsonl"
-```
-
-Accept only `status=staged` from `stage` and `status=valid` from `validate`. Independently verify source record count, sign convention, duplicate count, and—when available—statement totals or closing-balance movement. Treat every warning, skipped matched line, count mismatch, duplicate dedupe key, or PDF layout change as unresolved.
-
-An agent may perform provider-neutral second-pass review when useful. Give it only transaction date, sanitized description, signed amount, and currency. Compare its structured result with staging locally. Do not require Qwen, Kimi, LiteLLM, OpenAI, or any other model/provider for a deterministic import to run.
+Accept `status=staged`. Stop on `needs_review` or `failed`. A mismatch means the two LLM passes disagree; show only mismatch counts, then use a new session to resolve the specific records. A duplicate dedupe key may represent two real purchases: ask the owner before removing either record.
 
 ## Control Batch Context
 
-For every file:
+For an archive, enumerate members locally without exposing names or contents. Extract one supported file, finish both LLM passes and reconciliation, then begin the next file with a fresh session. Keep each file's source, two extraction JSON files, staging JSONL, and manifest together.
 
-1. Run only the command needed for that file.
-2. Inspect structured command output, not the entire source.
-3. Record only status and counts in the response.
-4. End that file's isolated session before starting the next file.
-
-Use this concise progress format:
+Use this progress format:
 
 ```text
-<filename>: imported_or_seen=<n>, skipped=<n>, validation=<matched|mismatch|not-supported>
+<file index>/<total>: transactions=<n>, reconciliation=<matched|mismatch>, verification=<same_model_fresh_context|cross_model>, status=<staged|needs_review|failed>
 ```
 
-Do not list merchants or amounts in routine progress messages. After a batch, report aggregate file and transaction counts plus any filenames that require review.
+After a batch, report aggregate file and transaction counts plus only the file indexes requiring review.
 
-## Query and Analyze
+## Use the Canonical Ledger
 
-Use accepted staging records or the canonical ledger rather than reopening source documents. Query the normalized views documented in [references/database-design.md](references/database-design.md); keep the importer independent from a specific SQLite path or service.
+Read [references/database-design.md](references/database-design.md) before creating or changing a ledger schema, migrating records, or designing a finance report. Use [references/schema.sql](references/schema.sql) as the canonical SQLite DDL.
 
-State the time range, account scope, currency, and sign convention behind any analysis. Distinguish observed ledger facts from estimates or recommendations. Use conservative categories, disclose uncertainty, and avoid silently recategorizing reviewed transactions.
+Treat the nine-column bank-flow layout as a presentation view. Store authoritative values in the double-entry journal, derive income, expense, and running balance, and keep counterparty identity separate from accounting category. Do not require Actual Budget, Firefly III, or another service.
 
-When answering spending, budgeting, or reconciliation questions:
+Query accepted staging records or the ledger rather than reopening statements. State the time range, account scope, currency, and sign convention. Check unresolved files and duplicates before drawing conclusions. Ask for explicit confirmation before connecting accounts or performing transfers, payments, trades, orders, or account-setting changes.
 
-1. Query only the fields and date range needed.
-2. Check for duplicates, missing periods, parser mismatches, and unsupported files before drawing conclusions.
-3. Explain material anomalies without disclosing unrelated transaction details.
-4. Treat financial guidance as general analysis, not legal, tax, or fiduciary advice.
+## Preserve Auditability
 
-## Preserve Idempotency and Auditability
-
-- Preserve the staging manifest, source SHA-256, record hashes, source locators, and dedupe keys; do not manually duplicate entries after a retry.
-- Preserve originals and validation metadata so imports can be audited.
-- Report `imported_or_seen` separately from `skipped`; do not describe both as newly inserted transactions.
-- Never delete or rewrite source files or ledger entries without an explicit request and a verified backup or recovery path.
+- Preserve originals, both extraction JSON files, source hashes, page locators, staging manifests, record hashes, and dedupe keys.
+- Use a stable opaque account key; never put an account number in it.
+- Never delete or rewrite sources or accepted ledger entries without explicit approval and a recovery path.

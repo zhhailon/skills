@@ -25,7 +25,8 @@ namespace survives install even though the folder doesn't.
 ## Runtime requirements
 
 - Obsidian skills require the `obsidian` CLI on `PATH`.
-- `finance-steward` runs its standard-library importer with `uv run python`;
+- `finance-steward` uses the active LLM for extraction and runs its
+  standard-library reconciliation/staging script with `uv run python`;
   install [`uv`](https://docs.astral.sh/uv/) on the agent runtime's `PATH`.
 
 `finance-steward` is self-contained under

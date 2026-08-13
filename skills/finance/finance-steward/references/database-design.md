@@ -19,7 +19,7 @@ Use a local relational database as the source of truth for household cash flow, 
 
 - correct transfers, refunds, reimbursements, credit-card payments, and split purchases;
 - multiple household members, institutions, accounts, and currencies;
-- deterministic imports with source provenance and model validation;
+- LLM-first imports with deterministic staging, source provenance, and reconciliation;
 - idempotency, reconciliation, and immutable posted history;
 - useful human views without leaking sensitive identifiers to models;
 - SQLite operation today and a clean path to PostgreSQL later.
@@ -139,7 +139,7 @@ Use:
 
 - `source_files` for immutable original-file identity and storage path;
 - `import_batches` for one execution or uploaded archive;
-- `import_records` for one CSV row, PDF transaction line, or receipt candidate;
+- `import_records` for one extracted transaction candidate from any source format;
 - `transaction_sources` for many-to-many provenance;
 - `validation_runs` for parser/model agreement without retaining model-visible sensitive text;
 - `audit_events` for append-only mutation evidence;
@@ -197,25 +197,19 @@ Generate this export from the account register and related tables only when requ
 
 ## 6. Import and Validation Pipeline
 
-Use the bundled `scripts/finance_import.py` and its provider-neutral JSONL contract. Process exactly one source file at a time:
+Use the bundled `scripts/finance_stage.py` and the LLM extraction contract. Process exactly one source file at a time:
 
 1. Hash and store the immutable original in `source_files`.
-2. Create an `import_batch` and deterministic `import_records` with page/row locators.
-3. Stage normalized dates, integer amounts, sanitized descriptions, source locators, and dedupe keys locally without writing ledger entries.
-4. Compute a stable dedupe key and stop on ambiguous collisions.
-5. Run the bundled structural validator and reconcile record counts, sign convention, duplicates, and available statement totals.
-6. Optionally send only sanitized fields to an agent/model for an independent second pass:
+2. Use the available LLM in a fresh context to review every page and extract only allowed transaction fields.
+3. Repeat from the source in another fresh context. The same model is acceptable; label it `same_model_fresh_context` rather than model-independent verification.
+4. Reconcile both transaction multisets with the bundled script and stop on missing, extra, uncertain, or duplicate records.
+5. Stage normalized dates, integer amounts, sanitized descriptions, page locators, hashes, and dedupe keys locally without writing ledger entries.
+6. Store model identities, run mode, source and extraction hashes, counts, status, and differences in `validation_runs`.
+7. Create draft transactions and postings only after staging and validation succeed.
+8. Post only after balance, duplicate, count, total, and validation checks pass.
+9. Link every posted transaction back to its source record.
 
-   ```text
-   transaction date | description | signed amount | currency
-   ```
-
-7. Store only validator identity, sanitized-input hash, counts, status, and differences in `validation_runs`.
-8. Create draft transactions and postings only after staging and validation succeed.
-9. Post only after balance, duplicate, count, total, and validation checks pass.
-10. Link every posted transaction back to its source record.
-
-Never send balances, account owner data, account identifiers, addresses, full documents, source paths, or raw payloads to a model.
+The private owner may give the current source file to the active model for extraction. Keep model output transaction-only; never persist balances, account owner data, account identifiers, addresses, source paths, or unrelated raw text in extraction JSON.
 
 ## 7. Privacy Boundary
 
